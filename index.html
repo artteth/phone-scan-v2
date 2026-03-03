@@ -118,7 +118,12 @@
         .form-group label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text); }
         .field-hint { display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
         .form-actions { display: flex; gap: 12px; margin-top: 24px; }
-        .form-actions .btn { flex: 1; }
+        .form-actions .btn { flex: 1; }        .form-actions .btn { flex: 1; }
+        .btn-loading { position: relative; overflow: hidden; pointer-events: none; opacity: 0.8; }
+        .btn-loading::after { content: ''; position: absolute; bottom: 0; left: 0; height: 3px; background: rgba(255,255,255,0.7); width: 0%; transition: width 0.3s ease; }
+        .btn-loading.saving::after { width: 100%; transition: width 2s ease-in-out; }
+        .btn-loading.success { background: var(--success) !important; }
+        .btn-loading.error { background: var(--danger) !important; }
         .qr-reader { width: 100%; min-height: 250px; background: var(--text); }
         .scanner-hint { text-align: center; padding: 16px; color: var(--text-secondary); font-size: 0.9rem; }
         .page-description { color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem; }
@@ -550,7 +555,7 @@ function initializeEventListeners(){
     document.getElementById('close-scanner').addEventListener('click',closeScanner);
     document.getElementById('close-record').addEventListener('click',closeRecordModal);
     document.getElementById('record-form').addEventListener('submit',handleRecordSubmit);
-    document.getElementById('save-partial').addEventListener('click',handlePartialSave);
+    document.getElementById('save-partial').addEventListener('click',function(){playButtonPress();handlePartialSave();});
     document.getElementById('add-order-btn').addEventListener('click',openNewOrderModal);
     document.getElementById('close-new-order').addEventListener('click',closeNewOrderModal);
     document.getElementById('new-order-form').addEventListener('submit',handleNewOrderSubmit);
@@ -618,6 +623,14 @@ function handleRecordSubmit(e){e.preventDefault();saveRollData(true);}
 function handlePartialSave(){saveRollData(false);}
 function saveRollData(complete){
     console.log('💾 saveRollData called');
+    
+    // Get submit button and show loading state
+    const submitBtn = document.querySelector('#record-form button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.classList.add('btn-loading', 'saving');
+    submitBtn.textContent = 'Сохранение...';
+    playButtonPress();
+    
     const factoryLength=parseFloat(document.getElementById('factory-length').value);
     const measuredLength=parseFloat(document.getElementById('measured-length').value)||null;
     const shrinkage=parseFloat(document.getElementById('shrinkage').value)||null;
@@ -652,26 +665,47 @@ function saveRollData(complete){
         })
         .then(() => {
             console.log('✅ Saved to Google Sheets');
+            submitBtn.classList.remove('saving');
+            submitBtn.classList.add('success');
+            submitBtn.textContent = '✓ Сохранено';
             playScanSuccess();
-            closeRecordModal();
-            showToast('Данные сохранены в Google Таблицу', 'success');
-            if(document.getElementById('order-detail-page').classList.contains('active')){renderOrderDetail(currentOrderId);}
+            setTimeout(() => {
+                submitBtn.classList.remove('btn-loading', 'success', 'saving');
+                submitBtn.textContent = originalText;
+                closeRecordModal();
+                showToast('Данные сохранены в Google Таблицу', 'success');
+                if(document.getElementById('order-detail-page').classList.contains('active')){renderOrderDetail(currentOrderId);}
+            }, 500);
         })
         .catch(err => {
             console.error('❌ Failed to save to Google Sheets:', err);
+            submitBtn.classList.remove('saving');
+            submitBtn.classList.add('error');
+            submitBtn.textContent = '✗ Ошибка';
             playScanError();
-            saveData();
-            closeRecordModal();
-            showToast('Данные сохранены локально (ошибка синхронизации)', 'warning');
-            if(document.getElementById('order-detail-page').classList.contains('active')){renderOrderDetail(currentOrderId);}
+            setTimeout(() => {
+                submitBtn.classList.remove('btn-loading', 'error', 'saving');
+                submitBtn.textContent = originalText;
+                saveData();
+                closeRecordModal();
+                showToast('Данные сохранены локально (ошибка синхронизации)', 'warning');
+                if(document.getElementById('order-detail-page').classList.contains('active')){renderOrderDetail(currentOrderId);}
+            }, 500);
         });
     } else {
         console.log('💾 Saving locally...');
+        submitBtn.classList.remove('saving');
+        submitBtn.classList.add('success');
+        submitBtn.textContent = '✓ Сохранено';
         playScanSuccess();
-        saveData();
-        closeRecordModal();
-        showToast('Данные сохранены', 'success');
-        if(document.getElementById('order-detail-page').classList.contains('active')){renderOrderDetail(currentOrderId);}
+        setTimeout(() => {
+            submitBtn.classList.remove('btn-loading', 'success', 'saving');
+            submitBtn.textContent = originalText;
+            saveData();
+            closeRecordModal();
+            showToast('Данные сохранены', 'success');
+            if(document.getElementById('order-detail-page').classList.contains('active')){renderOrderDetail(currentOrderId);}
+        }, 500);
     }
 }
 function updateOrderStatus(order){const completedCount=order.rolls.filter(r=>r.status==='completed').length;const partialCount=order.rolls.filter(r=>r.status==='partial').length;if(completedCount===order.totalRolls){order.status='completed';}else if(completedCount>0||partialCount>0){order.status='in-progress';}else{order.status='pending';}}
@@ -713,6 +747,13 @@ function createOrder(orderId,totalRolls,activeRollNumber=null){const rolls=[];fo
 function openAddRollModal(){const rollNumber=orders[currentOrderId].rolls.length+1;openRecordModal(currentOrderId,rollNumber);}
 function renderQRCodePage(){const container=document.getElementById('qr-codes-grid');container.innerHTML=TEST_CODES.map(code=>'<div class="qr-code-item"><canvas id="qr-'+code+'"></canvas><div class="qr-code-label">'+code+'</div></div>').join('');TEST_CODES.forEach(code=>{const canvas=document.getElementById('qr-'+code);if(canvas){QRCode.toCanvas(canvas,code,{width:120,margin:2,color:{dark:'#1e293b',light:'#ffffff'}});}});}
 function showToast(message,type='info'){let container=document.querySelector('.toast-container');if(!container){container=document.createElement('div');container.className='toast-container';document.body.appendChild(container);}const toast=document.createElement('div');toast.className='toast '+type;toast.textContent=message;container.appendChild(toast);setTimeout(()=>{toast.remove();},3000);}
+
+// Button press feedback
+function playButtonPress() {
+    if (navigator.vibrate) {
+        navigator.vibrate(30);
+    }
+}
 
 // Scan feedback - vibration and sound
 function playScanSuccess() {
