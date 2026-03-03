@@ -397,19 +397,40 @@ function saveSettings() {
 let isSyncing = false;
 
 function syncFromGoogleSheets() {
-    if (isSyncing || !GOOGLE_APPS_SCRIPT_URL) return;
+    if (isSyncing || !GOOGLE_APPS_SCRIPT_URL) {
+        console.log('Sync skipped:', {isSyncing, hasUrl: !!GOOGLE_APPS_SCRIPT_URL});
+        return;
+    }
     
     isSyncing = true;
     showToast('Синхронизация...', 'info');
+    console.log('Syncing from:', GOOGLE_APPS_SCRIPT_URL);
     
     const script = document.createElement('script');
     script.src = GOOGLE_APPS_SCRIPT_URL + '?action=getOrders&mode=jsonp&callback=handleGoogleSheetsResponse';
     script.onerror = function() {
         isSyncing = false;
+        console.error('Sync error: script failed to load');
         showToast('Ошибка синхронизации', 'error');
     };
     document.head.appendChild(script);
 }
+
+window.handleGoogleSheetsResponse = function(response) {
+    isSyncing = false;
+    console.log('Sync response:', response);
+    
+    if (response && response.ok && response.data) {
+        orders = response.data;
+        saveData();
+        renderOrdersList();
+        showToast('Данные обновлены', 'success');
+        console.log('Orders loaded:', Object.keys(orders).length);
+    } else {
+        console.error('Sync error:', response);
+        showToast('Ошибка загрузки данных', 'error');
+    }
+};
 
 // Global callback for JSONP
 window.handleGoogleSheetsResponse = function(response) {
