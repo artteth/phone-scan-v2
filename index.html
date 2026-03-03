@@ -689,48 +689,62 @@ function showToast(message,type='info'){let container=document.querySelector('.t
 
 // Scan feedback - vibration and sound
 function playScanSuccess() {
-    // Vibration pattern: short buzz
+    console.log('🔊 Playing scan success feedback');
+    // Vibration
     if (navigator.vibrate) {
-        navigator.vibrate(50);
+        navigator.vibrate(100);
+        console.log('📳 Vibration triggered');
+    } else {
+        console.log('❌ Vibration not supported');
     }
-    // Beep sound
+    // Beep sound - create audio context on first user interaction
     try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (!window.scanAudioContext) {
+            window.scanAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        const audioContext = window.scanAudioContext;
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        oscillator.frequency.value = 880; // A5 note
+        oscillator.frequency.value = 1000;
         oscillator.type = 'sine';
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
         oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.15);
+        oscillator.stop(audioContext.currentTime + 0.2);
+        console.log('🔊 Beep played');
     } catch (e) {
-        console.log('Audio not supported');
+        console.log('❌ Audio error:', e);
     }
 }
 
 function playScanError() {
-    // Vibration pattern: two short buzzes
+    console.log('🔊 Playing scan error feedback');
+    // Vibration - two buzzes
     if (navigator.vibrate) {
-        navigator.vibrate([100, 50, 100]);
+        navigator.vibrate([200, 100, 200]);
+        console.log('📳 Error vibration triggered');
     }
-    // Error sound (lower tone)
+    // Error sound
     try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (!window.scanAudioContext) {
+            window.scanAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        const audioContext = window.scanAudioContext;
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        oscillator.frequency.value = 220; // A3 note (lower)
-        oscillator.type = 'sine';
+        oscillator.frequency.value = 150;
+        oscillator.type = 'square';
         gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
         oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.2);
+        oscillator.stop(audioContext.currentTime + 0.3);
+        console.log('🔊 Error beep played');
     } catch (e) {
-        console.log('Audio not supported');
+        console.log('❌ Audio error:', e);
     }
 }
     </script>
