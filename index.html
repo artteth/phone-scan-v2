@@ -434,6 +434,13 @@ function syncFromGoogleSheets(silent = false) {
     document.head.appendChild(script);
 }
 
+function hideSyncIndicator() {
+    const indicator = document.getElementById('sync-indicator');
+    if (indicator) {
+        indicator.classList.remove('active');
+    }
+}
+
 // Global callback for JSONP
 window.handleGoogleSheetsResponse = function(response) {
     isSyncing = false;
@@ -446,8 +453,8 @@ window.handleGoogleSheetsResponse = function(response) {
         renderOrdersList();
     } else {
         console.error('❌ Ошибка синхронизации:', response);
-        hideSyncIndicator();
     }
+    hideSyncIndicator();
 };
 
 function saveToGoogleSheets(action, payload) {
