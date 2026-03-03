@@ -460,7 +460,7 @@ function saveToGoogleSheets(action, payload) {
 }
 
 // ===== Constants =====
-
+const TEST_CODES = ['2020_1','2020_2','2020_3','2020_4','2020_5','2021_1','2021_2','2021_3','2022_1','2022_2','2022_3','2022_4'];
 let orders = {}, recentScans = [], currentOrderId = null, currentRollNumber = null, html5QrcodeScanner = null;
 
 document.addEventListener('DOMContentLoaded', () => { 
@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadData(); 
     initializeEventListeners(); 
     renderRecentScans(); 
-     
+    renderQRCodePage(); 
     
     // Initialize test data if empty and not using Google Sheets
     if(Object.keys(orders).length===0 && !USE_GOOGLE_SHEETS) {
@@ -500,7 +500,7 @@ function initializeEventListeners(){
     document.getElementById('manual-code').addEventListener('keypress',(e)=>{if(e.key==='Enter')handleManualInput();});
     document.getElementById('manual-code-modal').addEventListener('keypress',(e)=>{if(e.key==='Enter')handleManualInputModal();});
     document.getElementById('view-orders-btn').addEventListener('click',()=>showPage('orders-page'));
-    
+    document.getElementById('view-qr-codes-btn').addEventListener('click',()=>showPage('qr-codes-page'));
     document.getElementById('back-to-scanner').addEventListener('click',()=>showPage('scanner-page'));
     document.getElementById('back-to-scanner2').addEventListener('click',()=>showPage('scanner-page'));
     document.getElementById('back-to-orders').addEventListener('click',()=>showPage('orders-page'));
@@ -544,7 +544,7 @@ function initializeEventListeners(){
             recentScans = [];
             renderRecentScans();
             renderOrdersList();
-            
+            renderQRCodePage();
             showToast('Данные очищены', 'success');
         }
     });
@@ -641,7 +641,7 @@ function handleNewOrderSubmit(e){
 }
 function createOrder(orderId,totalRolls,activeRollNumber=null){const rolls=[];for(let i=1;i<=totalRolls;i++){rolls.push({rollNumber:i,factoryLength:null,measuredLength:null,shrinkage:null,status:'pending'});}orders[orderId]={id:orderId,totalRolls,rolls,status:'pending'};saveData();if(activeRollNumber){openRecordModal(orderId,activeRollNumber);}}
 function openAddRollModal(){const rollNumber=orders[currentOrderId].rolls.length+1;openRecordModal(currentOrderId,rollNumber);}
-);}});}
+function renderQRCodePage(){const container=document.getElementById('qr-codes-grid');container.innerHTML=TEST_CODES.map(code=>'<div class="qr-code-item"><canvas id="qr-'+code+'"></canvas><div class="qr-code-label">'+code+'</div></div>').join('');TEST_CODES.forEach(code=>{const canvas=document.getElementById('qr-'+code);if(canvas){QRCode.toCanvas(canvas,code,{width:120,margin:2,color:{dark:'#1e293b',light:'#ffffff'}});}});}
 function showToast(message,type='info'){let container=document.querySelector('.toast-container');if(!container){container=document.createElement('div');container.className='toast-container';document.body.appendChild(container);}const toast=document.createElement('div');toast.className='toast '+type;toast.textContent=message;container.appendChild(toast);setTimeout(()=>{toast.remove();},3000);}
     </script>
 </body>
