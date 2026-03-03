@@ -395,19 +395,23 @@ function saveSettings() {
 // ===== Google Sheets Synchronization =====
 let isSyncing = false;
 
-function syncFromGoogleSheets() {
+function syncFromGoogleSheets(silent = false) {
     if (!GOOGLE_APPS_SCRIPT_URL) {
-        console.error('No Google Apps Script URL configured');
-        showToast('Ошибка: нет URL скрипта', 'error');
+        if (!silent) {
+            console.error('No Google Apps Script URL configured');
+            showToast('Ошибка: нет URL скрипта', 'error');
+        }
         return;
     }
     if (isSyncing) {
-        console.log('Already syncing...');
         return;
     }
     
     isSyncing = true;
-    showToast('Синхронизация...', 'info');
+    if (!silent) {
+        showToast('Синхронизация...', 'info');
+        console.log('🔄 Запрос данных из Google Sheets...');
+    }
     console.log('🔄 Запрос данных из Google Sheets...');
     console.log('URL:', GOOGLE_APPS_SCRIPT_URL);
     
@@ -424,18 +428,14 @@ function syncFromGoogleSheets() {
 // Global callback for JSONP
 window.handleGoogleSheetsResponse = function(response) {
     isSyncing = false;
-    console.log('📥 Ответ от Google Sheets:', response);
     
     if (response && response.ok && response.data) {
         orders = response.data;
-        console.log('✅ Загружено заказов:', Object.keys(orders).length);
-        console.log('Заказы:', orders);
+        console.log('✅ Синхронизация:', Object.keys(orders).length, 'заказов');
         saveData();
         renderOrdersList();
-        showToast('Данные обновлены', 'success');
     } else {
-        console.error('❌ Ошибка: response=', response);
-        showToast('Ошибка загрузки данных', 'error');
+        console.error('❌ Ошибка синхронизации:', response);
     }
 };
 
@@ -491,6 +491,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sync from Google Sheets if enabled
     if (USE_GOOGLE_SHEETS) {
         syncFromGoogleSheets();
+        // Auto-sync every 30 seconds
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                syncFromGoogleSheets();
+            }
+        }, 30000);
+        // Sync when page becomes visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                syncFromGoogleSheets();
+            }
+        });
     } else {
         renderOrdersList();
     }
@@ -547,7 +559,7 @@ function initializeEventListeners(){
         saveSettings();
     });
     document.getElementById('sync-now-btn').addEventListener('click', () => {
-        syncFromGoogleSheets();
+        syncFromGoogleSheets(false); // false = show toast
     });
     document.getElementById('clear-local-data-btn').addEventListener('click', () => {
         if (confirm('Вы уверены, что хотите очистить все локальные данные?')) {
