@@ -370,16 +370,16 @@
     <!-- Load app.js instead of inline script -->
     <script>
 // ===== Google Sheets Configuration (loaded from localStorage) =====
-let USE_GOOGLE_SHEETS = false;
-let GOOGLE_APPS_SCRIPT_URL = '';
+let USE_GOOGLE_SHEETS = gsEnabled === 'true';
+let GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7xtYuo9uupyRcRZQjGqdZ2EAs-uWwsEIMdFFlbE8chP2WG2YSyDHcuaGFB0iZAa7p/exec';
 
 // Load settings from localStorage
 function loadSettings() {
     const gsEnabled = localStorage.getItem('use_google_sheets');
     const gsUrl = localStorage.getItem('google_apps_script_url');
-    if (gsEnabled === 'true') {
-        USE_GOOGLE_SHEETS = true;
-        GOOGLE_APPS_SCRIPT_URL = gsUrl || '';
+    if (gsEnabled !== null) {
+        USE_GOOGLE_SHEETS = gsEnabled === 'true';
+        GOOGLE_APPS_SCRIPT_URL = gsUrl || GOOGLE_APPS_SCRIPT_URL;
     }
 }
 
