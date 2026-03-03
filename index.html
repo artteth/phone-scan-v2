@@ -118,17 +118,17 @@
         .field-hint { display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
         .form-actions { display: flex; gap: 12px; margin-top: 24px; }
         .form-actions .btn { flex: 1; }
-        . { width: 100%; min-height: 250px; background: var(--text); }
+        .qr-reader { width: 100%; min-height: 250px; background: var(--text); }
         .scanner-hint { text-align: center; padding: 16px; color: var(--text-secondary); font-size: 0.9rem; }
         .page-description { color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem; }
-        . { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
-        . { background: var(--surface); border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow); }
-        . canvas { max-width: 100%; height: auto !important; margin-bottom: 8px; }
-        . { font-weight: 600; color: var(--primary); font-size: 0.95rem; }
-        . { background: var(--surface-hover); border-radius: var(--radius); padding: 16px; }
-        . h3 { font-size: 1rem; margin-bottom: 12px; }
-        . ol { padding-left: 20px; color: var(--text-secondary); }
-        . li { margin-bottom: 8px; font-size: 0.9rem; }
+        .qr-codes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+        .qr-code-item { background: var(--surface); border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow); }
+        .qr-code-item canvas { max-width: 100%; height: auto !important; margin-bottom: 8px; }
+        .qr-code-label { font-weight: 600; color: var(--primary); font-size: 0.95rem; }
+        .qr-instructions { background: var(--surface-hover); border-radius: var(--radius); padding: 16px; }
+        .qr-instructions h3 { font-size: 1rem; margin-bottom: 12px; }
+        .qr-instructions ol { padding-left: 20px; color: var(--text-secondary); }
+        .qr-instructions li { margin-bottom: 8px; font-size: 0.9rem; }
         @media (min-width: 768px) { .app-container { max-width: 600px; margin: 40px auto; border-radius: var(--radius); box-shadow: var(--shadow-lg); min-height: auto; } .page { min-height: auto; } }
         .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
         .toast { background: var(--text); color: white; padding: 12px 20px; border-radius: var(--radius-sm); font-size: 0.9rem; animation: toastSlideIn 0.3s ease; white-space: nowrap; }
@@ -161,7 +161,7 @@
                 <div class="scan-section">
                     <button id="scan-btn" class="btn btn-primary btn-large">
                         <span class="btn-icon">📷</span>
-                        Сканировать 
+                        Сканировать QR-код
                     </button>
                     <div class="divider">
                         <span>или</span>
@@ -179,16 +179,16 @@
                 </div>
                 <div class="action-buttons">
                     <button id="view-orders-btn" class="btn btn-outline">📋 Все заказы</button>
-                </div>
+                                    </div>
             </main>
             <div id="scanner-modal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2>Сканирование </h2>
+                        <h2>Сканирование QR-кода</h2>
                         <button class="close-btn" id="close-scanner">&times;</button>
                     </div>
-                    <div id="" class=""></div>
-                    <p class="scanner-hint">Наведите камеру на </p>
+                    <div id="qr-reader" class="qr-reader"></div>
+                    <p class="scanner-hint">Наведите камеру на QR-код</p>
                     <div style="padding:20px;border-top:1px solid var(--border);">
                         <p class="scanner-hint">Или введите вручную:</p>
                         <div class="manual-input" style="margin-top:8px;">
@@ -307,15 +307,15 @@
                 </form>
             </div>
         </div>
-        <div id="-page" class="page">
+        <div id="qr-codes-page" class="page">
             <header class="header">
                 <button class="back-btn" id="back-to-scanner2">← Назад</button>
-                <h1>🔲  для тестирования</h1>
+                <h1>🔲 QR-коды для тестирования</h1>
             </header>
             <main class="main-content">
                 <p class="page-description">Отсканируйте эти коды камерой телефона или введите их вручную для тестирования.</p>
-                <div id="" class=""></div>
-                <div class="">
+                <div id="qr-codes-grid" class="qr-codes-grid"></div>
+                <div class="qr-instructions">
                     <h3>Как использовать:</h3>
                     <ol>
                         <li>Откройте эту страницу на компьютере</li>
@@ -368,7 +368,7 @@
     <!-- Load app.js instead of inline script -->
     <script>
 // ===== Google Sheets Configuration (loaded from localStorage) =====
-let USE_GOOGLE_SHEETS = true; // Fixed: was gsEnabled reference
+let USE_GOOGLE_SHEETS = true;
 let GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7xtYuo9uupyRcRZQjGqdZ2EAs-uWwsEIMdFFlbE8chP2WG2YSyDHcuaGFB0iZAa7p/exec';
 
 // ===== Constants =====
@@ -395,48 +395,19 @@ function saveSettings() {
 let isSyncing = false;
 
 function syncFromGoogleSheets() {
-    if (!GOOGLE_APPS_SCRIPT_URL) {
-        console.log('Sync skipped: no URL');
-        return;
-    }
-    
-    if (isSyncing) {
-        console.log('Sync skipped: already syncing');
-        return;
-    }
+    if (isSyncing || !GOOGLE_APPS_SCRIPT_URL) return;
     
     isSyncing = true;
     showToast('Синхронизация...', 'info');
-    console.log('Syncing from:', GOOGLE_APPS_SCRIPT_URL);
-    
-    // Timeout to reset isSyncing after 10 seconds
-    setTimeout(() => { isSyncing = false; }, 10000);
     
     const script = document.createElement('script');
     script.src = GOOGLE_APPS_SCRIPT_URL + '?action=getOrders&mode=jsonp&callback=handleGoogleSheetsResponse';
     script.onerror = function() {
         isSyncing = false;
-        console.error('Sync error: script failed to load');
         showToast('Ошибка синхронизации', 'error');
     };
     document.head.appendChild(script);
 }
-
-window.handleGoogleSheetsResponse = function(response) {
-    isSyncing = false;
-    console.log('Sync response:', response);
-    
-    if (response && response.ok && response.data) {
-        orders = response.data;
-        saveData();
-        renderOrdersList();
-        showToast('Данные обновлены', 'success');
-        console.log('Orders loaded:', Object.keys(orders).length);
-    } else {
-        console.error('Sync error:', response);
-        showToast('Ошибка загрузки данных', 'error');
-    }
-};
 
 // Global callback for JSONP
 window.handleGoogleSheetsResponse = function(response) {
@@ -487,7 +458,7 @@ function saveToGoogleSheets(action, payload) {
 }
 
 // ===== Constants =====
-
+const TEST_CODES = ['2020_1','2020_2','2020_3','2020_4','2020_5','2021_1','2021_2','2021_3','2022_1','2022_2','2022_3','2022_4'];
 let orders = {}, recentScans = [], currentOrderId = null, currentRollNumber = null, html5QrcodeScanner = null;
 
 document.addEventListener('DOMContentLoaded', () => { 
@@ -578,7 +549,7 @@ function initializeEventListeners(){
 }
 
 function showPage(pageId){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(pageId).classList.add('active');if(pageId==='orders-page')renderOrdersList();}
-function openScanner(){const modal=document.getElementById('scanner-modal');modal.classList.add('active');if(!html5QrcodeScanner){html5QrcodeScanner=new Html5QrcodeScanner('',{fps:10,qrbox:{width:250,height:250}},false);} html5QrcodeScanner.render(handleQRCodeScan,(error)=>{console.log('Scanner error:',error);});}
+function openScanner(){const modal=document.getElementById('scanner-modal');modal.classList.add('active');if(!html5QrcodeScanner){html5QrcodeScanner=new Html5QrcodeScanner('qr-reader',{fps:10,qrbox:{width:250,height:250}},false);} html5QrcodeScanner.render(handleQRCodeScan,(error)=>{console.log('Scanner error:',error);});}
 function closeScanner(){const modal=document.getElementById('scanner-modal');modal.classList.remove('active');if(html5QrcodeScanner){html5QrcodeScanner.clear().catch(err=>console.log('Error clearing scanner:',err));}}
 function handleQRCodeScan(decodedText){closeScanner();processScannedCode(decodedText);}
 function handleManualInput(){const input=document.getElementById('manual-code');const code=input.value.trim();if(code){processScannedCode(code);input.value='';}else{showToast('Введите код','error');}}function handleManualInputModal(){const input=document.getElementById('manual-code-modal');const code=input.value.trim();if(code){closeScanner();processScannedCode(code);input.value='';}else{showToast('Введите код','error');}}
@@ -668,7 +639,7 @@ function handleNewOrderSubmit(e){
 }
 function createOrder(orderId,totalRolls,activeRollNumber=null){const rolls=[];for(let i=1;i<=totalRolls;i++){rolls.push({rollNumber:i,factoryLength:null,measuredLength:null,shrinkage:null,status:'pending'});}orders[orderId]={id:orderId,totalRolls,rolls,status:'pending'};saveData();if(activeRollNumber){openRecordModal(orderId,activeRollNumber);}}
 function openAddRollModal(){const rollNumber=orders[currentOrderId].rolls.length+1;openRecordModal(currentOrderId,rollNumber);}
-);}});}
+function renderQRCodePage(){const container=document.getElementById('qr-codes-grid');container.innerHTML=TEST_CODES.map(code=>'<div class="qr-code-item"><canvas id="qr-'+code+'"></canvas><div class="qr-code-label">'+code+'</div></div>').join('');TEST_CODES.forEach(code=>{const canvas=document.getElementById('qr-'+code);if(canvas){QRCode.toCanvas(canvas,code,{width:120,margin:2,color:{dark:'#1e293b',light:'#ffffff'}});}});}
 function showToast(message,type='info'){let container=document.querySelector('.toast-container');if(!container){container=document.createElement('div');container.className='toast-container';document.body.appendChild(container);}const toast=document.createElement('div');toast.className='toast '+type;toast.textContent=message;container.appendChild(toast);setTimeout(()=>{toast.remove();},3000);}
     </script>
 </body>
