@@ -347,7 +347,8 @@ function saveToGoogleSheets(action, payload) {
             headers: {
                 'Content-Type': 'text/plain'
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            redirect: 'follow'
         })
         .then(response => {
             console.log('Response status:', response.status);
