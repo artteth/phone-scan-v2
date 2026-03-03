@@ -617,10 +617,17 @@ function closeRecordModal(){document.getElementById('record-modal').classList.re
 function handleRecordSubmit(e){e.preventDefault();saveRollData(true);}
 function handlePartialSave(){saveRollData(false);}
 function saveRollData(complete){
+    console.log('💾 saveRollData called');
     const factoryLength=parseFloat(document.getElementById('factory-length').value);
     const measuredLength=parseFloat(document.getElementById('measured-length').value)||null;
     const shrinkage=parseFloat(document.getElementById('shrinkage').value)||null;
-    if(isNaN(factoryLength)){showToast('Введите заводской метраж','error');return;}
+    if(isNaN(factoryLength)){
+        playScanError();
+        showToast('Введите заводской метраж','error');
+        console.log('❌ Invalid factory length');
+        return;
+    }
+    console.log('✅ Factory length:', factoryLength);
     const order=orders[currentOrderId];
     let roll=order.rolls.find(r=>r.rollNumber===currentRollNumber);
     if(!roll){roll={rollNumber:currentRollNumber,factoryLength,measuredLength:null,shrinkage:null,status:'pending'};order.rolls.push(roll);}
@@ -630,8 +637,12 @@ function saveRollData(complete){
     else{roll.status='pending';}
     updateOrderStatus(order);
     
+    console.log('📊 USE_GOOGLE_SHEETS:', typeof USE_GOOGLE_SHEETS, USE_GOOGLE_SHEETS);
+    console.log('🔗 GOOGLE_APPS_SCRIPT_URL:', typeof GOOGLE_APPS_SCRIPT_URL, GOOGLE_APPS_SCRIPT_URL ? 'defined' : 'undefined');
+    
     // Save to Google Sheets if enabled
-    if (USE_GOOGLE_SHEETS && GOOGLE_APPS_SCRIPT_URL) {
+    if (typeof USE_GOOGLE_SHEETS !== 'undefined' && USE_GOOGLE_SHEETS && typeof GOOGLE_APPS_SCRIPT_URL !== 'undefined' && GOOGLE_APPS_SCRIPT_URL) {
+        console.log('☁️ Saving to Google Sheets...');
         saveToGoogleSheets('saveRoll', {
             orderId: currentOrderId,
             rollNumber: currentRollNumber,
@@ -640,18 +651,23 @@ function saveRollData(complete){
             shrinkage: shrinkage
         })
         .then(() => {
+            console.log('✅ Saved to Google Sheets');
+            playScanSuccess();
             closeRecordModal();
             showToast('Данные сохранены в Google Таблицу', 'success');
             if(document.getElementById('order-detail-page').classList.contains('active')){renderOrderDetail(currentOrderId);}
         })
         .catch(err => {
-            console.error('Failed to save to Google Sheets:', err);
+            console.error('❌ Failed to save to Google Sheets:', err);
+            playScanError();
             saveData();
             closeRecordModal();
             showToast('Данные сохранены локально (ошибка синхронизации)', 'warning');
             if(document.getElementById('order-detail-page').classList.contains('active')){renderOrderDetail(currentOrderId);}
         });
     } else {
+        console.log('💾 Saving locally...');
+        playScanSuccess();
         saveData();
         closeRecordModal();
         showToast('Данные сохранены', 'success');
