@@ -1,4 +1,4 @@
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE'; // Replace with your Google Sheet ID
+const SPREADSHEET_ID = '1T6mLHHjXiHX4pLlFY0RBmLfdqfImpX48vX3IjgJP4eY'; // Your Google Sheet ID
 const SHEET_NAME = 'рулоны';
 const LOCK_TIMEOUT_SECONDS = 30;
 
