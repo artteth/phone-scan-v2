@@ -373,6 +373,10 @@
 let USE_GOOGLE_SHEETS = gsEnabled === 'true';
 let GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7xtYuo9uupyRcRZQjGqdZ2EAs-uWwsEIMdFFlbE8chP2WG2YSyDHcuaGFB0iZAa7p/exec';
 
+// ===== Constants =====
+const STORAGE_KEY = 'fabric_inventory_data';
+const RECENT_SCANS_KEY = 'recent_scans';
+
 // Load settings from localStorage
 function loadSettings() {
     const gsEnabled = localStorage.getItem('use_google_sheets');
