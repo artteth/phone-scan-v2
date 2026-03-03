@@ -431,7 +431,7 @@ window.handleGoogleSheetsResponse = function(response) {
     
     if (response && response.ok && response.data) {
         orders = response.data;
-        console.log('✅ Синхронизация:', Object.keys(orders).length, 'заказов');
+        console.log('✅ Обновлено:', Object.keys(orders).length, 'заказов');
         saveData();
         renderOrdersList();
     } else {
@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Sync when page becomes visible
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
-                syncFromGoogleSheets();
+                syncFromGoogleSheets(true); // silent
             }
         });
     } else {
@@ -559,7 +559,7 @@ function initializeEventListeners(){
         saveSettings();
     });
     document.getElementById('sync-now-btn').addEventListener('click', () => {
-        syncFromGoogleSheets(false); // false = show toast
+        syncFromGoogleSheets(false); // false = show notifications
     });
     document.getElementById('clear-local-data-btn').addEventListener('click', () => {
         if (confirm('Вы уверены, что хотите очистить все локальные данные?')) {
