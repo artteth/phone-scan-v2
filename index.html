@@ -404,7 +404,7 @@ function saveSettings() {
 // ===== Google Sheets Synchronization =====
 let isSyncing = false;
 
-function syncFromGoogleSheets(silent = false) {
+function syncFromGoogleSheets(silent = true) {
     if (!GOOGLE_APPS_SCRIPT_URL) {
         if (!silent) {
             console.error('No Google Apps Script URL configured');
@@ -512,13 +512,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Auto-sync every 30 seconds
         setInterval(() => {
             if (document.visibilityState === 'visible') {
-                syncFromGoogleSheets();
+                syncFromGoogleSheets(true);
             }
         }, 10000);
         // Sync when page becomes visible
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
-                syncFromGoogleSheets(true); // silent
+                syncFromGoogleSheets(true);
             }
         });
     } else {
