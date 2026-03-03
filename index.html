@@ -370,7 +370,7 @@
     <!-- Load app.js instead of inline script -->
     <script>
 // ===== Google Sheets Configuration (loaded from localStorage) =====
-let USE_GOOGLE_SHEETS = gsEnabled === 'true';
+let USE_GOOGLE_SHEETS = false;  // Will be set by loadSettings()
 let GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7xtYuo9uupyRcRZQjGqdZ2EAs-uWwsEIMdFFlbE8chP2WG2YSyDHcuaGFB0iZAa7p/exec';
 
 // ===== Constants =====
@@ -381,9 +381,14 @@ const RECENT_SCANS_KEY = 'recent_scans';
 function loadSettings() {
     const gsEnabled = localStorage.getItem('use_google_sheets');
     const gsUrl = localStorage.getItem('google_apps_script_url');
-    if (gsEnabled !== null) {
+    // Enable Google Sheets by default if not set
+    if (gsEnabled === null) {
+        USE_GOOGLE_SHEETS = true;
+    } else {
         USE_GOOGLE_SHEETS = gsEnabled === 'true';
-        GOOGLE_APPS_SCRIPT_URL = gsUrl || GOOGLE_APPS_SCRIPT_URL;
+    }
+    if (gsUrl && gsUrl !== '') {
+        GOOGLE_APPS_SCRIPT_URL = gsUrl;
     }
 }
 
