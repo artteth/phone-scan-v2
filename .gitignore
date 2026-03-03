@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Local storage data (should not be committed)
+*.localstorage
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
