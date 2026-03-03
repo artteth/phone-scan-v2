@@ -594,7 +594,18 @@ function initializeEventListeners(){
 }
 
 function showPage(pageId){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(pageId).classList.add('active');if(pageId==='orders-page')renderOrdersList();}
-function openScanner(){const modal=document.getElementById('scanner-modal');modal.classList.add('active');if(!html5QrcodeScanner){html5QrcodeScanner=new Html5QrcodeScanner('qr-reader',{fps:10,qrbox:{width:250,height:250}},false);} html5QrcodeScanner.render(handleQRCodeScan,(error)=>{console.log('Scanner error:',error);});}
+function openScanner(){
+    // Initialize audio context on first user interaction (required for iOS)
+    if (!window.scanAudioContext) {
+        try {
+            window.scanAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('✅ Audio context initialized');
+        } catch (e) {
+            console.log('❌ Audio context error:', e);
+        }
+    }
+    const modal=document.getElementById('scanner-modal');modal.classList.add('active');if(!html5QrcodeScanner){html5QrcodeScanner=new Html5QrcodeScanner('qr-reader',{fps:10,qrbox:{width:250,height:250}},false);} html5QrcodeScanner.render(handleQRCodeScan,(error)=>{console.log('Scanner error:',error);});
+}
 function closeScanner(){const modal=document.getElementById('scanner-modal');modal.classList.remove('active');if(html5QrcodeScanner){html5QrcodeScanner.clear().catch(err=>console.log('Error clearing scanner:',err));}}
 function handleQRCodeScan(decodedText){closeScanner();playScanSuccess();processScannedCode(decodedText);}
 function handleManualInput(){const input=document.getElementById('manual-code');const code=input.value.trim();if(code){processScannedCode(code);input.value='';}else{showToast('Введите код','error');}}function handleManualInputModal(){const input=document.getElementById('manual-code-modal');const code=input.value.trim();if(code){closeScanner();processScannedCode(code);input.value='';}else{showToast('Введите код','error');}}
@@ -697,12 +708,16 @@ function playScanSuccess() {
     } else {
         console.log('❌ Vibration not supported');
     }
-    // Beep sound - create audio context on first user interaction
+    // Beep sound
     try {
         if (!window.scanAudioContext) {
             window.scanAudioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
         const audioContext = window.scanAudioContext;
+        // Resume audio context if suspended (required for iOS)
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         oscillator.connect(gainNode);
@@ -732,6 +747,10 @@ function playScanError() {
             window.scanAudioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
         const audioContext = window.scanAudioContext;
+        // Resume audio context if suspended (required for iOS)
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         oscillator.connect(gainNode);
