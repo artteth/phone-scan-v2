@@ -157,15 +157,13 @@
                 <h1>📦 Сканер рулонов ткани</h1>
             </header>
             <main class="main-content">
-                <div class="scan-section">
-                    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 16px;">
-                        Для добавления рулона нажмите "Все заказы", затем создайте новый заказ или выберите существующий
-                    </p>
+                </div>
                 <div class="action-buttons">
                     <button id="view-orders-btn" class="btn btn-outline">📋 Все заказы</button>
+                    
                 </div>
             </main>
-
+        </div>
         <div id="orders-page" class="page">
             <header class="header">
                 <button class="back-btn" id="back-to-scanner">← Назад</button>
@@ -265,13 +263,68 @@
                 </form>
             </div>
         </div>
-
+        <div id="qr-codes-page" class="page">
+            <header class="header">
+                <button class="back-btn" id="back-to-scanner2">← Назад</button>
+                <h1>🔲 QR-коды для тестирования</h1>
+            </header>
+            <main class="main-content">
+                <p class="page-description">Отсканируйте эти коды камерой телефона или введите их вручную для тестирования.</p>
+                <div id="qr-codes-grid" class="qr-codes-grid"></div>
+                <div class="qr-instructions">
+                    <h3>Как использовать:</h3>
+                    <ol>
+                        <li>Откройте эту страницу на компьютере</li>
+                        <li>На другом устройстве (телефоне) откройте то же приложение</li>
+                        <li>Сканируйте коды камерой или вводите их вручную</li>
+                        <li>Записывайте данные по каждому рулону</li>
+                    </ol>
+                </div>
+            </main>
+        </div>
+        
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>⚙️ Настройки</h2>
+                    <button class="close-btn" id="close-settings">&times;</button>
+                </div>
+                <div class="record-form">
+                    <div class="settings-section">
+                        <h3 style="margin-bottom: 12px; font-size: 1rem;">Google Таблица Синхронизация</h3>
+                        <div class="toggle-switch">
+                            <label for="gs-toggle">Включить синхронизацию</label>
+                            <label>
+                                <input type="checkbox" id="gs-toggle" class="toggle-input">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div id="gs-config" style="display: none; margin-top: 16px;">
+                            <div class="form-group">
+                                <label for="gs-url">Google Apps Script URL</label>
+                                <input type="text" id="gs-url" class="input" placeholder="https://script.google.com/macros/s/.../exec">
+                                <span class="field-hint">URL вашего Google Apps Script веб-приложения</span>
+                            </div>
+                            <button id="sync-now-btn" class="btn btn-primary sync-btn">🔄 Синхронизировать сейчас</button>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3 style="margin-bottom: 12px; font-size: 1rem;">Данные</h3>
+                        <button id="clear-local-data-btn" class="btn btn-outline" style="width: 100%;">🗑️ Очистить локальные данные</button>
+                    </div>
+                    <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-top: 16px;">
+                        <p>Для настройки Google Таблицы следуйте инструкциям в DOCUMENTATION.md</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Load app.js instead of inline script -->
     <script>
 // ===== Google Sheets Configuration (loaded from localStorage) =====
-let USE_GOOGLE_SHEETS = false;  // Will be set by loadSettings()
+let USE_GOOGLE_SHEETS = gsEnabled === 'true';
 let GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7xtYuo9uupyRcRZQjGqdZ2EAs-uWwsEIMdFFlbE8chP2WG2YSyDHcuaGFB0iZAa7p/exec';
 
 // ===== Constants =====
@@ -282,14 +335,9 @@ const RECENT_SCANS_KEY = 'recent_scans';
 function loadSettings() {
     const gsEnabled = localStorage.getItem('use_google_sheets');
     const gsUrl = localStorage.getItem('google_apps_script_url');
-    // Enable Google Sheets by default if not set
-    if (gsEnabled === null) {
-        USE_GOOGLE_SHEETS = true;
-    } else {
+    if (gsEnabled !== null) {
         USE_GOOGLE_SHEETS = gsEnabled === 'true';
-    }
-    if (gsUrl && gsUrl !== '') {
-        GOOGLE_APPS_SCRIPT_URL = gsUrl;
+        GOOGLE_APPS_SCRIPT_URL = gsUrl || GOOGLE_APPS_SCRIPT_URL;
     }
 }
 
@@ -340,22 +388,16 @@ function saveToGoogleSheets(action, payload) {
             ...payload
         };
         
-        console.log('Saving to Google Sheets:', data);
-        
-        fetch(GOOGLE_APPS_SCRIPT_URL, {
+        fetch(GOOGLE_APPS_SCRIPT_URL + '?mode=tg-api', {
             method: 'POST',
             headers: {
-                'Content-Type': 'text/plain'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(data),
             redirect: 'follow'
         })
-        .then(response => {
-            console.log('Response status:', response.status);
-            return response.json();
-        })
+        .then(response => response.json())
         .then(result => {
-            console.log('Response data:', result);
             if (result.ok) {
                 orders = result.data;
                 saveData();
@@ -372,7 +414,7 @@ function saveToGoogleSheets(action, payload) {
 }
 
 // ===== Constants =====
-
+const TEST_CODES = ['2020_1','2020_2','2020_3','2020_4','2020_5','2021_1','2021_2','2021_3','2022_1','2022_2','2022_3','2022_4'];
 let orders = {}, recentScans = [], currentOrderId = null, currentRollNumber = null, html5QrcodeScanner = null;
 
 document.addEventListener('DOMContentLoaded', () => { 
@@ -405,14 +447,14 @@ function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(orders));loc
 function initializeTestData(){orders['2020']={id:'2020',totalRolls:5,rolls:[{rollNumber:1,factoryLength:50,measuredLength:null,shrinkage:null,status:'pending'},{rollNumber:2,factoryLength:48,measuredLength:null,shrinkage:null,status:'pending'},{rollNumber:3,factoryLength:52,measuredLength:null,shrinkage:null,status:'pending'},{rollNumber:4,factoryLength:49,measuredLength:null,shrinkage:null,status:'pending'},{rollNumber:5,factoryLength:51,measuredLength:null,shrinkage:null,status:'pending'}]};orders['2021']={id:'2021',totalRolls:3,rolls:[{rollNumber:1,factoryLength:45,measuredLength:43.5,shrinkage:3.3,status:'completed'},{rollNumber:2,factoryLength:47,measuredLength:null,shrinkage:null,status:'pending'},{rollNumber:3,factoryLength:46,measuredLength:null,shrinkage:null,status:'pending'}]};orders['2022']={id:'2022',totalRolls:4,rolls:[{rollNumber:1,factoryLength:55,measuredLength:53.8,shrinkage:2.2,status:'completed'},{rollNumber:2,factoryLength:53,measuredLength:51.5,shrinkage:2.8,status:'completed'},{rollNumber:3,factoryLength:54,measuredLength:null,shrinkage:null,status:'pending'},{rollNumber:4,factoryLength:52,measuredLength:null,shrinkage:null,status:'pending'}]};saveData();}
 
 function initializeEventListeners(){
-    document.getElementById('scan-btn').addEventListener('click',openScanner);
-    document.getElementById('manual-submit').addEventListener('click',handleManualInput);
-    document.getElementById('manual-submit-modal').addEventListener('click',handleManualInputModal);
+    
+    
+    
     
     
     
     document.getElementById('view-orders-btn').addEventListener('click',()=>showPage('orders-page'));
-    document.getElementById('view-qr-codes-btn').addEventListener('click',()=>showPage('qr-codes-page'));
+    
     document.getElementById('back-to-scanner').addEventListener('click',()=>showPage('scanner-page'));
     document.getElementById('back-to-scanner2').addEventListener('click',()=>showPage('scanner-page'));
     document.getElementById('back-to-orders').addEventListener('click',()=>showPage('orders-page'));
@@ -553,7 +595,7 @@ function handleNewOrderSubmit(e){
 }
 function createOrder(orderId,totalRolls,activeRollNumber=null){const rolls=[];for(let i=1;i<=totalRolls;i++){rolls.push({rollNumber:i,factoryLength:null,measuredLength:null,shrinkage:null,status:'pending'});}orders[orderId]={id:orderId,totalRolls,rolls,status:'pending'};saveData();if(activeRollNumber){openRecordModal(orderId,activeRollNumber);}}
 function openAddRollModal(){const rollNumber=orders[currentOrderId].rolls.length+1;openRecordModal(currentOrderId,rollNumber);}
-);}});}
+});}});}
 function showToast(message,type='info'){let container=document.querySelector('.toast-container');if(!container){container=document.createElement('div');container.className='toast-container';document.body.appendChild(container);}const toast=document.createElement('div');toast.className='toast '+type;toast.textContent=message;container.appendChild(toast);setTimeout(()=>{toast.remove();},3000);}
     </script>
 </body>
